@@ -10,7 +10,7 @@ import time
 def forecast_pm25():
     print("📊 Running PM2.5 Forecast...")
 
-    # 1️⃣ เชื่อมต่อกับฐานข้อมูล MySQL
+    # เชื่อมต่อกับฐานข้อมูล MySQL
     conn = pymysql.connect(
         host='localhost',
         user='root',
@@ -18,16 +18,16 @@ def forecast_pm25():
         database='air'
     )
 
-# 2️⃣ ดึงข้อมูลจากตาราง data_imt_copy
+# ดึงข้อมูลจากตาราง data_imt_copy
     query = "SELECT time, PM2_5 FROM data_imt_copy ORDER BY time ASC"
     df = pd.read_sql(query, conn)
     conn.close()
 
-    # 3️⃣ แปลงคอลัมน์ time เป็น datetime และตั้งเป็น index
+    # แปลงคอลัมน์ time เป็น datetime และตั้งเป็น index
     df['time'] = pd.to_datetime(df['time'])
     df.set_index('time', inplace=True)
 
-    # 4️⃣ ตรวจสอบความเป็น Stationary ด้วย ADF Test
+    # ตรวจสอบความเป็น Stationary ด้วย ADF Test
     result = adfuller(df['PM2_5'])
     print(f"ADF Statistic: {result[0]}")
     print(f"P-Value: {result[1]}")
@@ -36,17 +36,17 @@ def forecast_pm25():
     if result[1] > 0.05:
         df['PM2_5'] = df['PM2_5'].diff().dropna()
 
-    # 5️⃣ สร้างโมเดล SARIMA (p=1, d=1, q=1)(P=1, D=1, Q=1, m=24)
+    # สร้างโมเดล SARIMA (p=1, d=1, q=1)(P=1, D=1, Q=1, m=24)
     model = SARIMAX(df['PM2_5'], order=(1, 1, 1), seasonal_order=(1, 1, 1, 24))
     model_fit = model.fit()
 
-    # 6️⃣ พยากรณ์ค่า PM2.5 ในอีก 6 ชั่วโมงข้างหน้า
+    # พยากรณ์ค่า PM2.5 ในอีก 6 ชั่วโมงข้างหน้า
     forecast = model_fit.forecast(steps=6).round(2)
 
-# 7️⃣ สร้างช่วงเวลาสำหรับการพยากรณ์
+# สร้างช่วงเวลาสำหรับการพยากรณ์
     forecast_times = pd.date_range(start=df.index[-1] + pd.Timedelta(hours=1), periods=6, freq="H")
 
-    # 8️⃣ สร้าง DataFrame แสดงผล
+    # สร้าง DataFrame แสดงผล
     forecast_df = pd.DataFrame({
         'Timestamp': forecast_times,
         'Forecasted PM2.5': forecast
@@ -54,7 +54,7 @@ def forecast_pm25():
 
     print(forecast_df)
 
-    # 9️⃣ เชื่อมต่อฐานข้อมูลเพื่อบันทึกค่าพยากรณ์
+    # เชื่อมต่อฐานข้อมูลเพื่อบันทึกค่าพยากรณ์
     conn = pymysql.connect(
         host='localhost',
         user='root',
@@ -63,7 +63,7 @@ def forecast_pm25():
     )
     cursor = conn.cursor()
 
-    # 10️⃣ บันทึกข้อมูลที่พยากรณ์ลงในตาราง data_predict
+    # บันทึกข้อมูลที่พยากรณ์ลงในตาราง data_predict
     for index, row in forecast_df.iterrows():
         timestamp = row['Timestamp']
         pm25_value = row['Forecasted PM2.5']
@@ -74,7 +74,7 @@ def forecast_pm25():
     conn.close()
     print("✅ Forecast saved to database.")
 
-# 11️⃣ ตั้งค่าให้ฟังก์ชันรันทุกๆ 1 ชั่วโมงschedule.every(1).hours.do(forecast_pm25)
+# ตั้งค่าให้ฟังก์ชันรันทุกๆ 1 ชั่วโมงschedule.every(1).hours.do(forecast_pm25)
 schedule.every(5).seconds.do(forecast_pm25)
 
 
@@ -83,4 +83,4 @@ while True:
     schedule.run_pending()
     time.sleep(60)  # ตรวจสอบทุกๆ 60 วินาที
 
-#Run Script: python forecast_pm25.py
+# Run : python forecast_pm25.py
