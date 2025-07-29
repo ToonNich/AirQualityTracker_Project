@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM2.5 Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F2F9FF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* ปุ่มกลับไปหน้า AirPage */
+        .back-button {
+            position: absolute;
+            top: 3%;
+            left: 2%;
+            padding: 7px 15px;
+            background-color: #3674B5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .back-button:hover {
+            background-color: rgb(57, 47, 116);
+        }
+
+        /* ทำให้ div ที่มีข้อมูลเดือนและวันที่อยู่ทางขวาของหน้าจอ */
+        .date-container {
+            position: absolute;
+            top: 2%;
+            right: 2%;
+            text-align: right;
+        }
+
+        /* เพิ่มขนาดของ left-container */
+        .left-container {
+            width: 60%;
+            margin-left: 2%;
+        }
+
+        /* จัดสไตล์สำหรับ section และ div ที่ใช้แสดงค่าของ PM2.5 */
+        .pm-section {
+            padding: 30px;
+            text-align: center;
+            margin: 10px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            height: 450px; /* เพิ่มความสูงของ pm-section */
+        }
+
+        .pm-value {
+            display: inline-block;
+            background-color: #4A628A;
+            color: white;
+            padding: 10px 20px;
+            margin: 20px;
+            border-radius: 10px;
+            font-size: 25px;
+            width: 60px;
+            height: 140px;
+        }
+        .pm-value span {
+            font-size: 0.6em;  /* Makes the unit slightly smaller */
+            
+        }
+
+        /* จัดตำแหน่งข้อความ "PM 2.5" ไปทางซ้าย */
+        .pm-header {
+            text-align: left;
+            font-size: 35px;
+            margin-left: 2%;
+        }
+
+        .right-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 50px;
+            margin-left: 2%;
+            margin-right: 5%;
+        }
+
+        .temp-section, .humi-section {
+            padding: 20px;
+            font-size: 35px;
+            text-align: center;
+            margin-left: 2%;
+            margin-right: 5%;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: -8%;
+            width: 400px;
+            height: 150px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ปุ่มกลับไปยังหน้า AirPage.html -->
+    <button class="back-button" onclick="window.location.href='AirPage.html';">Back</button>
+
+    <div class="date-container">
+        <h1 id="month-year"></h1>
+        <p class="info" id="date-info"></p>
+    </div>
+
+    <!-- Section สำหรับแสดงข้อมูล PM2.5 -->
+    <div class="left-container" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="pm-section">
+            <p class="pm-header" style="color: #477cbd; font-weight: bold; ">PM 2.5 µg/m³</p>
+            <div class="pm-value" id="pm-value6"></div>
+            <div class="pm-value" id="pm-value5"></div>
+            <div class="pm-value" id="pm-value4"></div>
+            <div class="pm-value" id="pm-value3"></div>
+            <div class="pm-value" id="pm-value2"></div>
+            <div class="pm-value" id="pm-value1"></div>
+        </div>
+    </div>
+
+    <!-- Container สำหรับ temp-section และ humi-section -->
+    <div class="right-container">
+        <!-- Section สำหรับแสดงข้อมูล Temperature -->
+        <div class="temp-section" style="margin-bottom: 10px; text-align: left;">
+            <p style="margin-top: 0px; margin-bottom: 5px; color: #477cbd; font-weight: bold;">Temperature</p>
+            <p id="temperature-value" style="font-size: 45px; color: #4A628A; font-weight: bold; text-align: center;"></p>
+        </div>
+
+        <!-- Section สำหรับแสดงข้อมูล Humidity -->
+        <div class="humi-section" style="text-align: left;">
+            <p style="margin-top: 0px; margin-bottom: 5px; color: #477cbd; font-weight: bold;">Humidity</p>
+            <p id="humidity-value" style="font-size: 45px; color: #4A628A; font-weight: bold; text-align: center;"></p>
+        </div>
+    </div>
+
+    <script>
+        // สร้างอ็อบเจ็กต์ Date
+        const currentDate = new Date();
+
+        // สร้าง array สำหรับชื่อเดือน
+        const months = ["January", "February", "March", "April", "May", "June", 
+                        "July", "August", "September", "October", "November", "December"];
+
+        // สร้าง array สำหรับชื่อวัน
+        const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+        // ดึงเดือนและปี
+        const month = months[currentDate.getMonth()];
+        const year = currentDate.getFullYear();
+
+        // ดึงวันในสัปดาห์, เดือน, วันที่ และปี
+        const dayOfWeek = weekdays[currentDate.getDay()];
+        const date = currentDate.getDate();
+
+        // กำหนดค่าใน <h1> และ <p>
+        document.getElementById("month-year").innerText = `${month} ${year}`;
+        document.getElementById("date-info").innerText = `${dayOfWeek}, ${month} ${date}, ${year}`;
+
+        window.addEventListener('DOMContentLoaded', function () {
+            fetch('/AirQualityTracker/FetchPredictData.php')  // URL ของ PHP script ที่ดึงข้อมูล
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'error') {
+                        console.error(data.message);
+                    } else {
+                        // Log ข้อมูลที่ได้จาก JSON เพื่อดูว่าได้รับข้อมูลถูกต้องหรือไม่
+                        console.log(data);
+
+                        // สมมติว่า data เป็น array ที่มีทั้ง Pm25 และ Time
+                        data.forEach((row, index) => {
+                            const pmValue = row.Pm25;
+                            const time = row.Time; // ได้เวลาในรูปแบบ HH:MM:SS
+
+                            // แสดงเวลาในรูปแบบที่ต้องการ
+                            const formattedTime = time; // ไม่มีการแปลงอะไรเพราะเราเก็บเวลาไว้แล้ว
+
+                            // เลือก div สำหรับแสดงค่า PM
+                            const pmElement = document.getElementById(`pm-value${index + 1}`);
+                            if (pmElement) {
+                                pmElement.innerHTML = `${pmValue} <br><span>µg/m³</span><br><span>Time: ${formattedTime}</span>`;
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data: ', error);
+                });
+
+                function fetchData() {
+                    fetch('/AirQualityTracker/FetchDailyData.php')  // ดึงข้อมูลจากเซิร์ฟเวอร์
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'error') {
+                                console.error(data.message);
+                            } else {
+                                // อัปเดตค่า Temperature
+                                const tempElement = document.getElementById('temperature-value');
+                                if (tempElement) {
+                                    tempElement.innerHTML = `${data.Temperature} °C`;
+                                }
+
+                                // อัปเดตค่า Humidity
+                                const humiElement = document.getElementById('humidity-value');
+                                if (humiElement) {
+                                    humiElement.innerHTML = `${data.Humidity} %`;
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching temperature and humidity data: ', error);
+                        });
+                }
+
+                // เรียกใช้ fetchData() ทุกๆ 5 วินาที (5000 มิลลิวินาที)
+                setInterval(fetchData, 5000);
+
+                // โหลดข้อมูลทันทีเมื่อหน้าเว็บเปิด
+                fetchData();
+
+        });
+
+
+
+    </script>
+</body>
+</html>

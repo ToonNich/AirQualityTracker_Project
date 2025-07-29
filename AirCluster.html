@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clustering Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #F2F9FF;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 1200px;
+            margin-top: 20px;
+            gap: 30px;
+        }
+
+        .text-box {
+            flex: 1;
+            max-width: 400px;
+            text-align: left;
+        }
+
+        .chart-box {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: #4D55CC;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        canvas {
+            width: 90%;
+            max-width: 700px;
+            max-height: 500px;
+            margin-top: 10px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+        }
+
+        button {
+            background-color: #3674B5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: rgb(57, 47, 116);
+        }
+        /* ปุ่มกลับไปหน้า AirPage */
+        .back-button {
+            position: absolute;
+            top: 1%;
+            left: 2%;
+            padding: 7px 15px;
+            background-color: #3674B5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 5%;
+        }
+
+        .back-button:hover {
+            background-color: #29598b;
+        }
+    </style>
+</head>
+<body>
+    <!-- ปุ่มกลับไปยังหน้า AirPage.html -->
+    <button class="back-button" onclick="window.location.href='AirPage.html';">Back</button>
+    <div class="container">
+        <div class="text-box">
+            <h2>K-Means Clustering</h2>
+            <p>This graph shows the clustering of data using **K-Means Algorithm**, which is based on temperature and humidity values.</p>
+        </div>
+        <div class="chart-box">
+            <canvas id="kMeansChart"></canvas>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="text-box">
+            <h2>DBSCAN Clustering</h2>
+            <p>This graph shows the result of **DBSCAN Algorithm** which uses the method of determining the main and peripheral points to group the data.</p>
+        </div>
+        <div class="chart-box">
+            <canvas id="dbscanChart"></canvas>
+        </div>
+    </div>
+
+    <div class="container" style="margin-bottom: 3%;">
+        <div class="text-box">
+            <h2>Heat Map</h2>
+            <p>It allows you to see whether PM2.5 will be higher or grow at specific temperature or humidity ranges. Using Heatmap, users can see the distribution of PM2.5 in environments with different temperatures and humidity.</p>
+        </div>
+        <div class="chart-box">
+            <!-- Display the heat map image -->
+            <img id="heatMapImage" alt="Heat Map" style="max-width: 90%; height: auto;">
+        </div>        
+    </div>
+
+    <script>
+        // ฟังก์ชันแมปค่า PM2.5 เป็นสี (สีเข้มขึ้นตามค่า PM2.5)
+        function getPM25Color(value) {
+            if (value <= 12) return '#00e400'; // ดี (เขียว)
+            if (value <= 35) return '#ffff00'; // ปานกลาง (เหลือง)
+            if (value <= 55) return '#ff7e00'; // มีผลกระทบต่อสุขภาพบางกลุ่ม (ส้ม)
+            if (value <= 150) return '#ff0000'; // ไม่ดีต่อสุขภาพ (แดง)
+            if (value <= 250) return '#8f3f97'; // อันตรายมาก (ม่วง)
+            return '#7e0023'; // อันตรายสุด (น้ำตาลเข้ม)
+        }
+
+        function fetchKMeansData() {
+            fetch('/AirQualityTracker/KM.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.clusters) {
+                        const kMeansData = data.clusters;
+                        const kMeansLabels = [];
+                        const kMeansPoints = [];
+                        const clusterColors = ['#9FD4A3', '#FDFD95', '#FF9967', '#FF6962', '#B19CD8']; // กำหนดสีให้ Cluster 
+
+                        kMeansData.forEach((cluster, index) => {
+                            kMeansLabels.push('Cluster ' + (index + 1));
+
+                            kMeansPoints.push({
+                                label: 'Cluster ' + (index + 1),
+                                data: cluster.map(point => ({
+                                    x: point[0], // Temperature (°C)
+                                    y: point[1], // Humidity (%)
+                                    pm25: point[2], // ค่า PM2.5
+                                })),
+                                backgroundColor: clusterColors[index % clusterColors.length], // ใช้สีของ Cluster
+                                pointRadius: 8,
+                                pointHoverRadius: 12,
+                                pointBorderColor: 'black',
+                                pointBorderWidth: 1,
+                            });
+                        });
+
+                        // ล้างกราฟเก่า ถ้ามี
+                        const existingChart = Chart.getChart('kMeansChart');
+                        if (existingChart) {
+                            existingChart.destroy();
+                        }
+
+                        // สร้างกราฟ K-Means
+                        new Chart(document.getElementById('kMeansChart').getContext('2d'), {
+                            type: 'scatter',
+                            data: { datasets: kMeansPoints },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: {
+                                        title: { display: true, text: 'Temperature (°C)', color: '#ff69b4' },
+                                    },
+                                    y: {
+                                        title: { display: true, text: 'Humidity (%)', color: '#ff69b4' },
+                                    }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: { font: { size: 14, weight: 'bold', color: '#6a5acd' } }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching K-Means data:', error));
+        }
+
+        // Function to fetch and update DBSCAN chart data
+        function fetchDBSCANData() {
+            fetch('/AirQualityTracker/DB.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.clusters) {
+                        const dbscanClusters = data.clusters;
+                        const dbscanLabels = [];
+                        const dbscanPoints = [];
+                        const Colors = ['#9FD4A3', '#FDFD95', '#FF9967', '#FF6962', '#B19CD8']; // กำหนดสีให้ Cluster 
+
+                        dbscanClusters.forEach((cluster, index) => {
+                            dbscanLabels.push('Cluster ' + (index + 1));
+                            dbscanPoints.push(cluster.map(point => ({
+                                x: point[0], // Temperature
+                                y: point[1], // Humidity
+                                backgroundColor: Colors[index % Colors.length], // ใช้สีจาก Colors ตาม Cluster
+                                pm25: point[2], // Store PM2.5 value for reference
+                            })));
+                        });
+
+                        new Chart(document.getElementById('dbscanChart').getContext('2d'), {
+                            type: 'scatter',
+                            data: {
+                                datasets: dbscanPoints.map((points, index) => ({
+                                    label: dbscanLabels[index],
+                                    data: points,
+                                    backgroundColor: points.map(point => point.backgroundColor), // ใช้สีสำหรับแต่ละจุด
+                                    pointRadius: 8,
+                                    pointHoverRadius: 12,
+                                    pointBorderColor: 'black',
+                                    pointBorderWidth: 1,
+                                }))
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    x: { title: { display: true, text: 'Temperature (°C)', color: '#ff69b4' } },
+                                    y: { title: { display: true, text: 'Humidity (%)', color: '#ff69b4' } }
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: { font: { size: 14, weight: 'bold', color: '#6a5acd' } }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+        }
+
+        function fetchHeatMapData() {
+            fetch('/AirQualityTracker/heatmapretieve.php') // Adjust the path to your PHP file
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+
+                    if (data.imageBase64) {
+                        const imgBase64 = data.imageBase64;
+                        const imgElement = document.getElementById('heatMapImage');
+
+                        // Set the source of the image to the base64 string
+                        imgElement.src = imgBase64;
+                    } else {
+                        console.error('No image data found');
+                    }
+                })
+                .catch(error => console.error('Error fetching Heat Map data:', error));
+        }
+
+
+        window.onload = function() {
+            fetchHeatMapData();
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchKMeansData();
+            fetchDBSCANData();
+        });
+    </script>
+</body>
+</html>

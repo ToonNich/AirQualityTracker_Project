@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Quality Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #fbf3fe;
+      display: flex;
+    }
+    .container {
+      display: flex;
+      width: 100%;
+    }
+    .left-panel {
+      flex: 3;
+      background-color: #f3f9ff;
+      padding: 20px;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .right-panel {
+      flex: 1;
+      background: linear-gradient(135deg, #211C84, #B5A8D5);
+      color: #fbf3fe;
+      padding-left: 20px;
+      padding-right: 20px;
+      padding-top: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .info {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+    /* ปรับขนาดกราฟให้เล็กลง */
+    #overviewChart, #additionalChart {
+      max-width: 900px;
+      height: 600px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="left-panel">
+    <div>
+      <h1 id="month-year" style="margin-left: 2%; margin-top: 2%;"></h1>
+      <p class="info" id="date-info" style="margin-left: 2%;"></p>
+    </div>
+    
+    <!-- กราฟข้อมูลรวมแบบ Scatter -->
+    <div class="section" style="margin-left: 2%; margin-top: 2%;">
+      <h2 style="margin-top: 2%; margin-bottom: 1%; ">PM 2.5</h2>
+      <canvas id="overviewChart"></canvas>
+    </div>
+
+    <!-- กราฟอุณหภูมิรายสัปดาห์แบบ Line Chart -->
+    <div class="section" style="margin-left: 2%; margin-top: 2%;">
+      <h2 style="margin-top: 2%; margin-bottom: 1%;">Weekly Temperature</h2>
+      <canvas id="additionalChart"></canvas>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <p style="font-size: 50px; margin-top: 35px; margin-left: 15px; margin-bottom: 0px;">Chiang Mai</p>
+    <p style="margin-top: 5px; margin-left: 20px; position: relative;">Suthep
+        <span id="current-time" style="position: absolute; right: 0; top: 0; font-size: 18px; color: white;"></span>
+    </p>
+
+    <!-- แสดงข้อมูลอุณหภูมิ -->
+    <div class="section1" style="border-bottom: 1px solid #dddddd77; padding: 20px; margin-bottom: 15px; height: 170px;">
+        <h2 id="temperature" style="font-size: 60px; text-align: center;">Loading...</h2>
+    </div>
+
+    <!-- แสดงข้อมูลความชื้น -->
+    <div class="section1" style="border-bottom: 1px solid #dddddd77; padding: 20px; margin-bottom: 15px; height: 180px;">
+        <h2 id="humidity" style="font-size: 60px; text-align: center;">Loading...</h2>
+    </div>
+
+    <div class="section1" style="padding: 20px; margin-bottom: 15px; height: 170px;" onclick="window.location.href='AirPmPrediction.html';">
+        <a href="AirCluster.html">
+            <button style="margin-left: 95%; font-size: 16px; background-color: #3674B5; color: white; border: none; border-radius: 5px;">
+                >
+            </button>
+        </a>
+        <h2 id="pm25" style="font-size: 60px; text-align: center; margin-top: 10px;">Loading...</h2>
+        <p id="air-quality" style="text-align: center;">Loading...</p>
+    </div>
+</div>
+
+</div>
+
+
+<script>
+
+// สร้างอ็อบเจ็กต์ Date
+const currentDate = new Date();
+
+// สร้าง array สำหรับชื่อเดือน
+const months = ["January", "February", "March", "April", "May", "June", 
+                "July", "August", "September", "October", "November", "December"];
+
+// สร้าง array สำหรับชื่อวัน
+const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// ดึงเดือนและปี
+const month = months[currentDate.getMonth()];
+const year = currentDate.getFullYear();
+
+// ดึงวันในสัปดาห์, เดือน, วันที่ และปี
+const dayOfWeek = weekdays[currentDate.getDay()];
+const date = currentDate.getDate();
+
+// กำหนดค่าใน <h1> และ <p>
+document.getElementById("month-year").innerText = `${month} ${year}`;
+document.getElementById("date-info").innerText = `${dayOfWeek}, ${month} ${date}, ${year}`;
+
+// ฟังก์ชันแสดงเวลา
+function updateTime() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeString = `${hours}:${minutes}:${seconds}`;
+    document.getElementById('current-time').textContent = timeString;
+}
+
+// เรียกใช้งานฟังก์ชัน updateTime ทุกๆ วินาที
+setInterval(updateTime, 1000);
+
+
+function fetchData() {
+    fetch('/AirQualityTracker/FetchDailyData.php') // ระบุที่อยู่ของ PHP script
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Network response was not ok: " + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.PM2_5 && data.Temperature && data.Humidity) {
+                document.getElementById('temperature').textContent = data.Temperature + "°C";
+                document.getElementById('humidity').textContent = data.Humidity + "%";
+                document.getElementById('pm25').textContent = data.PM2_5 + " µg/m³";
+
+                let airQuality = '';
+                let pmValue = parseFloat(data.PM2_5);
+                if (pmValue <= 50) {
+                    airQuality = 'Good';
+                } else if (pmValue <= 100) {
+                    airQuality = 'Moderate';
+                } else if (pmValue <= 150) {
+                    airQuality = 'Unhealthy for Sensitive Groups';
+                } else if (pmValue <= 200) {
+                    airQuality = 'Unhealthy';
+                } else if (pmValue <= 300) {
+                    airQuality = 'Very Unhealthy';
+                } else {
+                    airQuality = 'Hazardous';
+                }
+
+                document.getElementById('air-quality').textContent = "Air Quality: " + airQuality;
+            } else {
+                document.getElementById('temperature').textContent = "Data not available";
+                document.getElementById('humidity').textContent = "Data not available";
+                document.getElementById('pm25').textContent = "Data not available";
+                document.getElementById('air-quality').textContent = "Air Quality: Data not available";
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching data:', error);
+            document.getElementById('temperature').textContent = "Error fetching data";
+            document.getElementById('humidity').textContent = "Error fetching data";
+            document.getElementById('pm25').textContent = "Error fetching data";
+            document.getElementById('air-quality').textContent = "Air Quality: Error";
+        });
+}
+
+// อัปเดตข้อมูลทุกๆ 5 วินาที
+setInterval(fetchData, 5000);
+
+// อัปเดตเวลาปัจจุบัน
+function updateTime() {
+    const currentTime = new Date();
+    const hours = String(currentTime.getHours()).padStart(2, '0');
+    const minutes = String(currentTime.getMinutes()).padStart(2, '0');
+    const seconds = String(currentTime.getSeconds()).padStart(2, '0');
+    document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+}
+
+// อัปเดตเวลา ทุกๆ วินาที
+setInterval(updateTime, 1000);
+
+// ดึงข้อมูลเมื่อหน้าเว็บโหลด
+window.onload = fetchData;
+fetch('/AirQualityTracker/FetchNormalData.php')
+  .then(response => response.json())
+  .then(data => {
+    console.log(data); // ตรวจสอบข้อมูลจาก API
+
+    if (Array.isArray(data) && data.length > 0) {
+      // แปลง time และเรียงให้เริ่มจาก 01:00 ถึง 00:00
+      const sortedData = data.map(item => ({
+        time: new Date(item.time), // แปลงเป็น Date Object
+        PM2_5: item.PM2_5
+      })).sort((a, b) => a.time.getHours() - b.time.getHours());
+
+      const labels = sortedData.map(item => {
+        let hours = item.time.getHours();
+        let minutes = String(item.time.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      });
+
+      const pm25Data = sortedData.map(item => item.PM2_5);
+
+      const ctx = document.getElementById('overviewChart').getContext('2d');
+      const overviewChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "PM 2.5 (µg/m³)",
+            data: pm25Data,
+            backgroundColor: 'rgba(54, 116, 181, 0.2)',
+            borderColor: '#3674B5',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Hour of the Day'
+              }
+            },
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'PM 2.5 (µg/m³)'
+              },
+              suggestedMin: 0,
+              suggestedMax: 100
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    } else {
+      console.error('No valid data returned');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+
+
+  // ฟังก์ชันเพื่อดึงข้อมูลจาก API
+  fetch('/AirQualityTracker/FetchWeeklyData.php')  // แทนที่ 'path_to_your_php_script.php' ด้วย URL ของไฟล์ PHP ที่ให้ข้อมูล
+    .then(response => response.json())
+    .then(data => {
+      // สร้าง array สำหรับค่าอุณหภูมิรายวัน
+      const temperatures = data.map(item => item.avg_temp); // แปลงข้อมูลอุณหภูมิจาก PHP
+      const dates = data.map(item => item.date); // แปลงข้อมูลวันที่จาก PHP
+      
+      // ดึงค่าชื่อวันในสัปดาห์
+      const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      
+      // สร้างกราฟ
+      const ctxAdditional = document.getElementById('additionalChart').getContext('2d');
+      const additionalChart = new Chart(ctxAdditional, {
+        type: 'line',
+        data: {
+          labels: weekDays,  // ใช้ชื่อวันในสัปดาห์
+          datasets: [{
+            label: "Weekly Temperature (°C)",
+            data: temperatures,  // ใช้ข้อมูลอุณหภูมิจากฐานข้อมูล
+            backgroundColor: 'rgba(54, 116, 181, 0.2)',
+            borderColor: '#3674B5',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Days of the Week'
+              }
+            },
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: 'Temperature (°C)'
+              },
+              suggestedMin: 20,
+              suggestedMax: 40
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            }
+          }
+        }
+      });
+    })
+    .catch(error => {
+      console.error('Error fetching data:', error);
+    });
+
+
+</script>
+
+</body>
+</html>
