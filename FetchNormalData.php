@@ -3,7 +3,7 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 // เชื่อมต่อฐานข้อมูล
-$conn = new mysqli("localhost", "root", "", "air");
+$conn = new mysqli("localhost", "root", "", "iot_class");
 
 // ตรวจสอบการเชื่อมต่อ
 if ($conn->connect_error) {
@@ -12,7 +12,7 @@ if ($conn->connect_error) {
 
 // ดึงข้อมูลเฉพาะของวันปัจจุบัน ตั้งแต่ 01:00 น. เป็นต้นไป
 $sql = "SELECT time, PM2_5, Humidity, Temperature 
-        FROM data_imt_copy 
+        FROM air_quality_tracker 
         WHERE DATE(time) = CURDATE() AND HOUR(time) >= 1
         ORDER BY time ASC";
 

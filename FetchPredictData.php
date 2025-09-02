@@ -1,6 +1,6 @@
 <?php
 // Database connection
-$conn = new mysqli("localhost", "root", "", "air");
+$conn = new mysqli("localhost", "root", "", "iot_class");
 
 // Check for connection errors
 if ($conn->connect_error) {

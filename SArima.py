@@ -15,11 +15,11 @@ def forecast_pm25():
         host='localhost',
         user='root',
         password='',
-        database='air'
+        database='iot_class'
     )
 
 # ดึงข้อมูลจากตาราง data_imt_copy
-    query = "SELECT time, PM2_5 FROM data_imt_copy ORDER BY time ASC"
+    query = "SELECT time, PM2_5 FROM air_quality_tracker ORDER BY time ASC"
     df = pd.read_sql(query, conn)
     conn.close()
 
@@ -59,7 +59,7 @@ def forecast_pm25():
         host='localhost',
         user='root',
         password='',
-        database='air'
+        database='iot_class'
     )
     cursor = conn.cursor()
 

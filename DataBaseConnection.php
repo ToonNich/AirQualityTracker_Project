@@ -2,7 +2,7 @@
 $servername = "localhost";
 $username = "root";
 $password = "";
-$dbname = "air"; // Use your actual database name
+$dbname = "iot_class"; // Use your actual database name
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

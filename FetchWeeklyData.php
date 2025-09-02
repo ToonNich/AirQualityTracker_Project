@@ -3,7 +3,7 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
 // เชื่อมต่อฐานข้อมูล
-$conn = new mysqli("localhost", "root", "", "air");
+$conn = new mysqli("localhost", "root", "", "iot_class");
 
 // ตรวจสอบการเชื่อมต่อ
 if ($conn->connect_error) {
@@ -12,7 +12,7 @@ if ($conn->connect_error) {
 
 // คำสั่ง SQL เพื่อดึงข้อมูลค่าเฉลี่ยอุณหภูมิในแต่ละวันของ 7 วันที่ผ่านมา
 $sql = "SELECT DATE(time) AS date, AVG(Temperature) AS avg_temp 
-        FROM data_imt_copy
+        FROM air_quality_tracker
         WHERE time >= CURDATE() - INTERVAL 7 DAY
         GROUP BY DATE(time) 
         ORDER BY date DESC"; // เรียงข้อมูลจากวันที่ล่าสุด

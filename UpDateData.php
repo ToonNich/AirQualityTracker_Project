@@ -30,7 +30,7 @@ if (!is_numeric($Temp) || !is_numeric($Humi) || !is_numeric($Pm)) {
 
 // ใช้ prepared statement เพื่อเพิ่มความปลอดภัย
 $stmt = $conn->prepare(
-    "INSERT INTO data_imt (Temperature, Humidity, PM2_5, time) 
+    "INSERT INTO air_quality_tracker (Temperature, Humidity, PM2_5, time) 
      VALUES (?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE 
      Temperature = VALUES(Temperature), 

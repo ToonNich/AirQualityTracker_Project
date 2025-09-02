@@ -1,6 +1,6 @@
 <?php
 // Database connection
-$conn = new mysqli("localhost", "root", "", "air");
+$conn = new mysqli("localhost", "root", "", "iot_class");
 
 // Check for connection errors
 if ($conn->connect_error) {
@@ -52,7 +52,7 @@ function kMeans($data, $k, $maxIterations = 100) {
 }
 
 // Query to fetch random data
-$sql = "SELECT PM2_5, Humidity, Temperature FROM data_imt WHERE Humidity > 0 ORDER BY RAND() LIMIT 3000";
+$sql = "SELECT PM2_5, Humidity, Temperature FROM air_quality_tracker WHERE Humidity > 0 ORDER BY RAND() LIMIT 3000";
 $result = $conn->query($sql);
 
 $data = [];

@@ -1,4 +1,4 @@
-<?php
+data_imt_copy<?php
 date_default_timezone_set("Asia/Bangkok");
 require "C:/xampp/htdocs/AirQualityTracker/DataBaseConnection.php"; // เปลี่ยนที่อยู่ให้ถูกต้อง
 
@@ -35,9 +35,9 @@ if (!is_numeric($Temp) || !is_numeric($Humi) || !is_numeric($Pm)) {
 
 // ตรวจสอบว่าเป็นนาทีที่ 0 หรือไม่
 if ($minute == 0) {
-    // บันทึกลงตาราง data_imt_copy เมื่อ นาที = 0
+    // บันทึกลงตาราง  เมื่อ นาที = 0
     $stmt1 = $conn->prepare(
-        "INSERT INTO data_imt_copy (Temperature, Humidity, PM2_5, time) 
+        "INSERT INTO air_quality_tracker (Temperature, Humidity, PM2_5, time) 
          VALUES (?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE 
          Temperature = VALUES(Temperature), 

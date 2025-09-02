@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // เชื่อมต่อฐานข้อมูล
-$conn = new mysqli("localhost", "root", "", "air");
+$conn = new mysqli("localhost", "root", "", "iot_class");
 
 // ตรวจสอบการเชื่อมต่อ
 if ($conn->connect_error) {

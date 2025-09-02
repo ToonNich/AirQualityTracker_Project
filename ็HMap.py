@@ -12,14 +12,14 @@ conn = mysql.connector.connect(
     host="localhost",      # ชื่อ host
     user="root",           # ชื่อผู้ใช้งาน
     password="",           # รหัสผ่าน
-    database="air"         # ชื่อฐานข้อมูล
+    database="iot_class"         # ชื่อฐานข้อมูล
 )
 
 cursor = conn.cursor()
 
 # ฟังก์ชันสำหรับดึงข้อมูลจากฐานข้อมูล
 def get_data_from_db():
-    query = "SELECT time, Temperature, Humidity, PM2_5 FROM data_imt_copy"
+    query = "SELECT Time, Temperature, Humidity, PM2_5 FROM air_quality_tracker"
     df = pd.read_sql(query, conn)
     return df
 
